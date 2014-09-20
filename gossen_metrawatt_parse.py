@@ -6,6 +6,8 @@
 import re,sys,string,serial
 
 str = "\x13DATIMx=20.09.14;18:33$18\r\n\x11"
+#          ^what          ^param        ^XOFF
+
 str = re.sub("[\x13\x11\r\n]+", "", str)
 # (cmd,csum) = string.split(str, '$')
 # if (csum != checksum(cmd)):
