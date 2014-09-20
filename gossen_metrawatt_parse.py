@@ -1,7 +1,9 @@
 #! /usr/bin/python
 #
-# (C) 2014 jw@fabfolk.com
+# (C) 2014 jw@fabfolk.com, All rights reserved.
+#
 # Distribute under MIT License or ask.
+# 
  
 import re,sys,string,serial
 
