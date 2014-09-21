@@ -27,8 +27,14 @@ class M701x:
                   )
 
   def read(self):
-    """reads one line"""
-    return self.serial.readline()
+    """reads one line, removes CRLF and validates checksum. Returns read line or False on checksum error"""
+    (answer,checksum) = string.split(self.serial.readline(),'$')
+    checksum = re.sub('[\r\n+]','',checksum).lower()
+    if (checksum == self.checksum(answer)):
+      return answer
+    else:
+      return False
+
 
   def write(self,str):
     """adds $-delimiter, checksum and line ending to str and sends it to the serial line"""
@@ -42,19 +48,14 @@ class M701x:
       qsum_dec += d
     return "%x" % (qsum_dec & 0xff)
 
+  def flush(self):
+    """discards all waiting answers in the buffer"""
+    self.serial.flushInput()
+
 if __name__ == "__main__":
   m701 = M701x(sys.argv[1])
   m701.write("IDN?")
-  str = m701.read()
-  print str
+  print m701.read()
 
   # str = "\x13DATIMx=20.09.14;18:33$18\r\n\x11"
   #         ^what             ^param        ^XOFF
-  # str = re.sub("[\x13\x11\r\n]+", "", str)
-  # (cmd,csum) = string.split(str, '$')
-  # if (csum != checksum(cmd)):
-  #   print "Checksum error '%s': %s != %s" % (str,csum,checksum(cmd))
-  #   sys.exit(1)
-
-
-
