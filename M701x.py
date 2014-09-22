@@ -11,9 +11,7 @@ import re,sys,string,serial
 
 
 class M701x:
-  """
-  Class for interfacing with Gossen Metrawatt devices over serial
-  """
+  """ Class for interfacing with Gossen Metrawatt devices over serial """
   def __init__(self, serial_port):
     self.port = serial_port
     self.serial = serial.Serial(
@@ -27,7 +25,7 @@ class M701x:
                   )
 
   def read(self):
-    """reads one line, removes CRLF and validates checksum. Returns read line or False on checksum error"""
+    """ reads one line, removes CRLF and validates checksum. Returns read line or False on checksum error """
     (answer,checksum) = string.split(self.serial.readline(),'$')
     checksum = re.sub('[\r\n+]','',checksum).lower()
     if (checksum == self.checksum(answer)):
@@ -37,11 +35,11 @@ class M701x:
 
 
   def write(self,str):
-    """adds $-delimiter, checksum and line ending to str and sends it to the serial line"""
+    """ adds $-delimiter, checksum and line ending to str and sends it to the serial line """
     self.serial.write(str + '$' + self.checksum(str) + '\r\n')
 
   def checksum(self,str):
-    """calculates checksum of a request/answer"""
+    """ calculates checksum of a request/answer """
     qsum_dec = ord('$')
     for i in str:
       d = ord(i)
@@ -49,13 +47,45 @@ class M701x:
     return "%x" % (qsum_dec & 0xff)
 
   def flush(self):
-    """discards all waiting answers in the buffer"""
+    """ discards all waiting answers in the buffer """
     self.serial.flushInput()
+
+  def request(self,command,retries=3):
+    """ sends a command to device and parses reply """
+    i = 0
+    while i < retries:
+      self.flush()
+      self.write(command)
+      answer = self.read()
+      # on checksum error retry
+      if ((answer == False) or (answer[:2] == '.N' and answer[3:7] == '=101')):
+        i+=1
+        continue
+      # on NACK return False and full answer
+      elif (answer[:2] == '.N'):
+        return False,answer
+      # on ACK return True and address of device
+      elif (answer[:2] == '.Y'):
+        return True,answer[2:3]
+      # on 'string answer' or unhandled answer return None and full answer
+      else:
+        return None,answer
+    # if not sucessful within retries return False
+    else:
+      return False,'CHKSUM_ERROR'
+
+
+
+
+
 
 if __name__ == "__main__":
   m701 = M701x(sys.argv[1])
-  m701.write("IDN?")
-  print m701.read()
+  #m701.write("IDN?")
+  #print m701.read()
+  print m701.request('IDN!0')
+  print m701.request('IDN?')
+  print m701.request('BEEP!')
 
   # str = "\x13DATIMx=20.09.14;18:33$18\r\n\x11"
   #         ^what             ^param        ^XOFF
