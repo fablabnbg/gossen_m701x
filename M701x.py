@@ -7,7 +7,7 @@
 # Authors: mose@fabfolk.com, juewei@fabfolk.com
 
 
-import re,sys,string,serial
+import re,sys,string,serial,time
 
 
 class M701x:
@@ -54,6 +54,9 @@ class M701x:
     """ sends a command to device and parses reply """
     i = 0
     while i < retries:
+
+      time.sleep(1) # M701x has a rate limit of 1 call per second?!
+
       self.flush()
       self.write(command)
       answer = self.read()
@@ -74,6 +77,10 @@ class M701x:
     else:
       return False,'CHKSUM_ERROR'
 
+  def sync_clock(self,idn):
+    # needs more testing and ability to sync all devices (e.g. PSI + S2N)
+    """ synchronizes device clock with PC """
+    return self.request('DAT'+idn+'!'+time.strftime("%d.%m.%y;%H:%M:%S"))
 
 
 
@@ -86,6 +93,8 @@ if __name__ == "__main__":
   print m701.request('IDN!0')
   print m701.request('IDN?')
   print m701.request('BEEP!')
+  print m701.sync_clock('0');
+  print m701.sync_clock('1');
 
   # str = "\x13DATIMx=20.09.14;18:33$18\r\n\x11"
   #         ^what             ^param        ^XOFF
