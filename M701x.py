@@ -23,6 +23,8 @@ class M701x:
                     timeout=3,
                     xonxoff=True
                   )
+    # r =  self.request('IDN!0')
+    # 
 
   def read(self):
     """ reads one line, removes CRLF and validates checksum. Returns read line or False on checksum error """
@@ -50,9 +52,11 @@ class M701x:
     """ discards all waiting answers in the buffer """
     self.serial.flushInput()
 
+
   def request(self,command,retries=3):
     """ sends a command to device and parses reply """
     i = 0
+
     while i < retries:
 
       time.sleep(1) # M701x has a rate limit of 1 call per second?!
@@ -79,7 +83,9 @@ class M701x:
 
   def sync_clock(self,idn):
     # needs more testing and ability to sync all devices (e.g. PSI + S2N)
-    """ synchronizes device clock with PC """
+    """ synchronizes device clock with PC.
+        Clocks in the device may be off several seconds, after sync_clock()
+    """
     return self.request('DAT'+idn+'!'+time.strftime("%d.%m.%y;%H:%M:%S"))
 
 
