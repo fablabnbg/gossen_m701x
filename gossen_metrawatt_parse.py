@@ -1,6 +1,6 @@
 #! /usr/bin/python
 #
-# (C) 2014 jw@fabfolk.com, All rights reserved.
+# (C) 2014 juewei@fabfolk.com, All rights reserved.
 #
 # Distribute under MIT License or ask.
 # 
