@@ -24,12 +24,12 @@ class M701x:
                     xonxoff=True
                   )
     # r =  self.request('IDN!0')
-    # 
+    #
 
   def read(self):
     """ reads one line, removes CRLF and validates checksum. Returns read line or False on checksum error """
     (answer,checksum) = string.split(self.serial.readline(),'$')
-    checksum = re.sub('[\r\n+]','',checksum).lower()
+    checksum = re.sub('[\r\n]+','',checksum).lower()
     if (checksum == self.checksum(answer)):
       return answer
     else:
