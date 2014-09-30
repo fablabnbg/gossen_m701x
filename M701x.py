@@ -14,7 +14,7 @@ class M701x:
   """ Class for interfacing with Gossen Metrawatt devices over serial """
   def __init__(self, serial_port):
     self.port = serial_port
-    self.serial = serial.Serial(
+    self.__serial = serial.Serial(
                     port=self.port,
                     baudrate=9600,
                     bytesize=serial.EIGHTBITS,
@@ -26,21 +26,31 @@ class M701x:
     # r =  self.request('IDN!0')
     #
 
-  def read(self):
+  def _read(self):
     """ reads one line, removes CRLF and validates checksum. Returns read line or False on checksum error """
-    (answer,checksum) = string.split(self.serial.readline(),'$')
-    checksum = re.sub('[\r\n]+','',checksum).lower()
-    if (checksum == self.checksum(answer)):
-      return answer
-    else:
-      return False
+    #return re.sub('[\r\n]+','',self.__serial.readline()) # uncomment for development and unprocessed return
+    parts = string.split(re.sub('[\r\n]+','',self.__serial.readline()),'$')
+    partcount = len(parts)
+    i = 0
+    returnstr = ''
+    while i < partcount-1:
+      checksum = parts[i+1][:2].lower() # the checksum is on the next parts first two chars as we split on $
+      if (checksum == self._checksum(parts[i][3:])): # multi line case for lines with first three chars like 'XX;' checksum and a delimiter
+        returnstr += parts[i][2:] # subtract checksum but leave delimiter
+      elif (checksum == self._checksum(parts[i])): # first line case
+        returnstr += parts[i]
+      else:
+        return False
+      i+=1
+    return returnstr
 
 
-  def write(self,str):
+  def _write(self,str):
     """ adds $-delimiter, checksum and line ending to str and sends it to the serial line """
-    self.serial.write(str + '$' + self.checksum(str) + '\r\n')
+    self.__serial.write(str + '$' + self._checksum(str) + '\r\n')
 
-  def checksum(self,str):
+
+  def _checksum(self,str):
     """ calculates checksum of a request/answer """
     qsum_dec = ord('$')
     for i in str:
@@ -48,23 +58,24 @@ class M701x:
       qsum_dec += d
     return "%x" % (qsum_dec & 0xff)
 
-  def flush(self):
+
+  def _flush(self):
     """ discards all waiting answers in the buffer """
-    self.serial.flushInput()
+    self.__serial.flushInput()
 
 
   def request(self,command,retries=3):
     """ sends a command to device and parses reply """
     i = 0
-
     while i < retries:
 
       time.sleep(1) # M701x has a rate limit of 1 call per second?!
 
-      self.flush()
-      self.write(command)
-      answer = self.read()
+      self._flush()
+      self._write(command)
+      answer = self._read()
       # on checksum error retry
+      # Answer .N<ADRESSE>=101 stands for checksum error
       if ((answer == False) or (answer[:2] == '.N' and answer[3:7] == '=101')):
         i+=1
         continue
@@ -81,11 +92,10 @@ class M701x:
     else:
       return False,'CHKSUM_ERROR'
 
+
   def sync_clock(self,idn):
     # needs more testing and ability to sync all devices (e.g. PSI + S2N)
-    """ synchronizes device clock with PC.
-        Clocks in the device may be off several seconds, after sync_clock()
-    """
+    """ synchronizes device clock with PC """
     return self.request('DAT'+idn+'!'+time.strftime("%d.%m.%y;%H:%M:%S"))
 
 
@@ -94,13 +104,15 @@ class M701x:
 
 if __name__ == "__main__":
   m701 = M701x(sys.argv[1])
-  #m701.write("IDN?")
-  #print m701.read()
+  #m701._write("IDN?")
+  #print m701._read()
+
   print m701.request('IDN!0')
   print m701.request('IDN?')
   print m701.request('BEEP!')
-  print m701.sync_clock('0');
-  print m701.sync_clock('1');
+  #print m701.sync_clock('0')
+  #print m701.sync_clock('1')
+  print m701.request('WER?')
 
   # str = "\x13DATIMx=20.09.14;18:33$18\r\n\x11"
   #         ^what             ^param        ^XOFF
