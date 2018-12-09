@@ -21,6 +21,9 @@ class M701x:
                     timeout=3,
                     xonxoff=True
                   )
+    # turn off local echo
+    self.__serial.write('\x06') # ACK
+
     # r =  self.request('IDN!0')
     #
 
