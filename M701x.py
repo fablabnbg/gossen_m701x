@@ -90,9 +90,11 @@ class M701x:
     else:
       return False,'CHKSUM_ERROR'
 
-  def sync_clock(self,idn):
+  def sync_clock(self, idn=None):
     # needs more testing and ability to sync all devices (e.g. PSI + S2N)
     """ synchronizes device clock with PC """
+    if idn is None:
+      idn = ''
     return self.request('DAT'+idn+'!'+time.strftime("%d.%m.%y;%H:%M:%S"))
 
 if __name__ == "__main__":
