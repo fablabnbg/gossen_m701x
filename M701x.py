@@ -46,13 +46,14 @@ class M701x:
     """ adds $-delimiter, checksum and line ending to str and sends it to the serial line """
     self.__serial.write(str + '$' + self._checksum(str) + '\r\n')
 
-  def _checksum(self,str):
+  @staticmethod
+  def _checksum(self, str):
     """ calculates checksum of a request/answer """
     qsum_dec = ord('$')
     for i in str:
       d = ord(i)
       qsum_dec += d
-    return "%x" % (qsum_dec & 0xff)
+    return "%02x" % (qsum_dec & 0xff)
 
   def _flush(self):
     """ discards all waiting answers in the buffer """
