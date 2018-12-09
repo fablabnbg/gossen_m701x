@@ -50,7 +50,7 @@ class M701x:
     self.__serial.write(str + '$' + self._checksum(str) + '\r\n')
 
   @staticmethod
-  def _checksum(self, str):
+  def _checksum(str):
     """ calculates checksum of a request/answer """
     qsum_dec = ord('$')
     for i in str:
