@@ -6,9 +6,7 @@
 #
 # Authors: mose@fabfolk.com, juewei@fabfolk.com
 
-
 import re,sys,string,serial,time
-
 
 class M701x:
   """ Class for interfacing with Gossen Metrawatt devices over serial """
@@ -44,11 +42,9 @@ class M701x:
       i+=1
     return returnstr
 
-
   def _write(self,str):
     """ adds $-delimiter, checksum and line ending to str and sends it to the serial line """
     self.__serial.write(str + '$' + self._checksum(str) + '\r\n')
-
 
   def _checksum(self,str):
     """ calculates checksum of a request/answer """
@@ -58,11 +54,9 @@ class M701x:
       qsum_dec += d
     return "%x" % (qsum_dec & 0xff)
 
-
   def _flush(self):
     """ discards all waiting answers in the buffer """
     self.__serial.flushInput()
-
 
   def request(self,command,retries=3):
     """ sends a command to device and parses reply """
@@ -92,15 +86,10 @@ class M701x:
     else:
       return False,'CHKSUM_ERROR'
 
-
   def sync_clock(self,idn):
     # needs more testing and ability to sync all devices (e.g. PSI + S2N)
     """ synchronizes device clock with PC """
     return self.request('DAT'+idn+'!'+time.strftime("%d.%m.%y;%H:%M:%S"))
-
-
-
-
 
 if __name__ == "__main__":
   m701 = M701x(sys.argv[1])
