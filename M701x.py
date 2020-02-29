@@ -68,7 +68,7 @@ class M701x:
     """ sends a command to device and parses reply """
     i = 0
     while i < retries:
-
+      print >> sys.stderr, ".",
       time.sleep(1) # M701x has a rate limit of 1 call per second?!
 
       self._flush()
