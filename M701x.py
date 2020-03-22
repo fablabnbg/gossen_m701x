@@ -6,9 +6,7 @@
 #
 # Authors: mose@fabfolk.com, juewei@fabfolk.com
 
-
 import re,sys,string,serial,time
-
 
 class M701x:
   """ Class for interfacing with Gossen Metrawatt devices over serial """
@@ -23,6 +21,9 @@ class M701x:
                     timeout=3,
                     xonxoff=True
                   )
+    # turn off local echo
+    self.__serial.write('\x06') # ACK
+
     # r =  self.request('IDN!0')
     #
 
@@ -44,25 +45,22 @@ class M701x:
       i+=1
     return returnstr
 
-
   def _write(self,str):
     """ adds $-delimiter, checksum and line ending to str and sends it to the serial line """
     self.__serial.write(str + '$' + self._checksum(str) + '\r\n')
 
-
-  def _checksum(self,str):
+  @staticmethod
+  def _checksum(str):
     """ calculates checksum of a request/answer """
     qsum_dec = ord('$')
     for i in str:
       d = ord(i)
       qsum_dec += d
-    return "%x" % (qsum_dec & 0xff)
-
+    return "%02x" % (qsum_dec & 0xff)
 
   def _flush(self):
     """ discards all waiting answers in the buffer """
     self.__serial.flushInput()
-
 
   def request(self,command,retries=3):
     """ sends a command to device and parses reply """
@@ -92,15 +90,12 @@ class M701x:
     else:
       return False,'CHKSUM_ERROR'
 
-
-  def sync_clock(self,idn):
+  def sync_clock(self, idn=None):
     # needs more testing and ability to sync all devices (e.g. PSI + S2N)
     """ synchronizes device clock with PC """
+    if idn is None:
+      idn = ''
     return self.request('DAT'+idn+'!'+time.strftime("%d.%m.%y;%H:%M:%S"))
-
-
-
-
 
 if __name__ == "__main__":
   m701 = M701x(sys.argv[1])
