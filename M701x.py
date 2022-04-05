@@ -4,7 +4,7 @@
 #
 # Distribute under MIT License or ask.
 #
-# Authors: mose@fabfolk.com, juewei@fabfolk.com
+# Authors: mose@fabfolk.com, juewei@fabfolk.com, fabian@blaese.de
 
 
 import re,sys,string,serial,time
@@ -28,35 +28,53 @@ class M701x:
 
   def _read(self):
     """ reads one line, removes CRLF and validates checksum. Returns read line or False on checksum error """
-    #return re.sub('[\r\n]+','',self.__serial.readline()) # uncomment for development and unprocessed return
-    parts = string.split(re.sub('[\r\n]+','',self.__serial.readline()),'$')
-    partcount = len(parts)
+    resp = self.__serial.readline().decode("iso-8859-1")
+
+    # Remove CRLF, split into lines
+    parts = re.sub('[\r\n]+', '', resp)
+
+    string = ""
+    strings = []
     i = 0
-    returnstr = ''
-    while i < partcount-1:
-      checksum = parts[i+1][:2].lower() # the checksum is on the next parts first two chars as we split on $
-      if (checksum == self._checksum(parts[i][3:])): # multi line case for lines with first three chars like 'XX;' checksum and a delimiter
-        returnstr += parts[i][2:] # subtract checksum but leave delimiter
-      elif (checksum == self._checksum(parts[i])): # first line case
-        returnstr += parts[i]
-      else:
-        return False
-      i+=1
-    return returnstr
+    while i < len(parts):
+      if parts[i] == "$":
+        chksum = parts[i+1] + parts[i+2]
+        i += 4
+
+        if chksum.lower() != self._checksum(string):
+          print("Checksum error: " + string)
+          print("check: " + chksum.lower() + ", calculated: " + self._checksum(string))
+          return False
+
+        string = re.sub('ê', 'Ω', string)
+        string = re.sub('æ', 'µ', string)
+        strings.append(string)
+        string = ""
+        continue
+
+      string += parts[i]
+      i += 1
+
+    if len(strings) == 0:
+      return ""
+    if len(strings) == 1:
+      return strings[0]
+    return strings
 
 
   def _write(self,str):
     """ adds $-delimiter, checksum and line ending to str and sends it to the serial line """
-    self.__serial.write(str + '$' + self._checksum(str) + '\r\n')
+    send = str + '$' + self._checksum(str) + '\r\n'
+    self.__serial.write(send.encode('utf-8'))
 
 
   def _checksum(self,str):
     """ calculates checksum of a request/answer """
+    raw_bytes = str.encode("iso-8859-1")
     qsum_dec = ord('$')
-    for i in str:
-      d = ord(i)
-      qsum_dec += d
-    return "%x" % (qsum_dec & 0xff)
+    for i in raw_bytes:
+      qsum_dec += int(i)
+    return "%02x" % (qsum_dec & 0xff)
 
 
   def _flush(self):
@@ -68,7 +86,7 @@ class M701x:
     """ sends a command to device and parses reply """
     i = 0
     while i < retries:
-      print >> sys.stderr, ".",
+
       time.sleep(1) # M701x has a rate limit of 1 call per second?!
 
       self._flush()
@@ -98,21 +116,19 @@ class M701x:
     """ synchronizes device clock with PC """
     return self.request('DAT'+idn+'!'+time.strftime("%d.%m.%y;%H:%M:%S"))
 
+  def data_csv(self):
+    data = self.request('WER?');
+    print("Name;BBCCDDEEFFGGHHIIKKLLMMNNOOPPQQRRSSTTUUVV;ID_Nr;ID-String2;Datum;Zeit;MW-R-SL;GW-R-SL;MW-DR-SL;GW-DR-SL; MW_R_ISO;GW_R_ISO; MW_U_ISO; GW_U_ISO;MW_DI_STR;GW_DI_STR;MW_UAC;GW_UAC;MW_UAC;GW_UAC;MW_EGA;GW_EGA;MW_EPA;GW_EPA;MW_EA;GW_EA;MW_EA_SFC;GW_EA_SFC;MW_GA;GW_GA;MW_PA_DC;GW_PA_DC;MW_PA_DC_SFC;GW_PA_DC_SFC;")
+    for x in data[1]:
+      print(x)
 
 
 
 
 if __name__ == "__main__":
-  m701 = M701x(sys.argv[1])
-  #m701._write("IDN?")
-  #print m701._read()
+  m701 = M701x("/dev/ttyUSB0")
 
-  print m701.request('IDN!0')
-  print m701.request('IDN?')
-  print m701.request('BEEP!')
-  #print m701.sync_clock('0')
-  #print m701.sync_clock('1')
-  print m701.request('WER?')
+  m701.data_csv()
 
   # str = "\x13DATIMx=20.09.14;18:33$18\r\n\x11"
   #         ^what             ^param        ^XOFF
