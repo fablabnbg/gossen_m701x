@@ -1,6 +1,6 @@
 gossen_m701x
 ============
 
-serial interface code for the Gossen Metrawatt M701x SECUTEST Family
+serial interface code for the Gossen Metrawatt M701x SECUTEST family
 
-Reverse engineeering + social engineering done by the FabLab Nurenberg Hackers Crew
+Reverse and social engineering done by the Fab Lab Region Nürnberg Hackers Crew
